@@ -2,208 +2,171 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>App Quản Lý Lịch Làm Việc - Fix Lỗi Chụp Ảnh</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>App Lịch Làm Việc Mobile</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
-        :root { 
-            --bep-color: #4472c4; 
-            --pv-color: #70ad47; 
-            --time-color: #d63031;
-            --off-color: #ff0000;
-        }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; padding: 20px; }
-        .container { max-width: 1500px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        :root { --bep: #4472c4; --pv: #70ad47; --time: #d63031; --off: #ff0000; }
         
-        .toolbar { display: flex; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; background: #f8f9fa; padding: 15px; border-radius: 8px; align-items: center; }
-        .quick-fill { display: flex; gap: 10px; margin-bottom: 20px; background: #e9ecef; padding: 15px; border-radius: 8px; align-items: center; border: 1px solid #ccc; }
-
-        .btn { padding: 10px 18px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; color: white; transition: 0.2s; }
-        .btn-export { background: #27ae60; }
-        .btn-print { background: #e67e22; }
-        .btn-save { background: #2d3436; margin-left: auto; }
-
-        /* KHUNG CUỘN */
-        .table-wrapper { max-height: 70vh; overflow: auto; border: 1px solid #ccc; position: relative; }
-        .table-wrapper.full-capture { max-height: none !important; overflow: visible !important; }
-
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; background: white; }
+        /* Tối ưu nền tảng di động */
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 10px; -webkit-tap-highlight-color: transparent; }
+        .container { max-width: 100%; margin: auto; background: white; padding: 10px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
         
-        thead th, thead td { 
-            position: sticky; top: 0; z-index: 10; 
-            background: #34495e; color: white; border: 1px solid #2c3e50; padding: 10px;
-        }
-        thead tr:nth-child(2) td { top: 41px; background: #e9ecef; color: #333; z-index: 9; }
-
-        td { border: 1px solid #ccc; padding: 5px; vertical-align: top; text-align: center; position: relative; }
-
-        .group-header { background: #f1f2f6; font-weight: bold; text-align: left; padding: 10px; border-left: 5px solid #2c3e50; }
-        .dept-col { font-weight: bold; background: #f9f9f9 !important; width: 120px; vertical-align: middle; position: sticky; left: 0; z-index: 5; }
-
-        .btn-delete-row { position: absolute; left: 2px; top: 2px; background: #ff7675; color: white; border: none; border-radius: 50%; width: 18px; height: 18px; cursor: pointer; font-size: 10px; display: none; }
-        tr:hover .btn-delete-row { display: block; }
-
-        .cell-box { display: flex; flex-direction: column; gap: 2px; min-height: 100px; justify-content: center; }
+        /* Toolbar hàng dọc trên mobile để dễ nhấn */
+        .toolbar { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; background: #f8f9fa; padding: 12px; border-radius: 8px; }
+        .toolbar-top { display: flex; justify-content: space-between; align-items: center; }
         
-        /* Input styling */
-        .edit-name, .edit-time, .replace-input { 
-            border: none; text-align: center; background: transparent; width: 100%; outline: none; font-family: inherit;
-        }
-        .edit-name { font-weight: bold; font-size: 15px; }
-        .edit-time { color: var(--time-color); font-size: 13px; }
-        .replace-input { border: 1px dashed #fff; background: rgba(255,255,255,0.4); color: white; font-size: 12px; border-radius: 3px; display: none; margin-top: 5px; padding: 2px; }
-
-        .btn-off { font-size: 10px; background: white; border: 1px solid #ccc; cursor: pointer; border-radius: 3px; padding: 2px 5px; width: 50px; margin: 5px auto 0; font-weight: bold; }
+        .btn { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-size: 14px; text-align: center; flex: 1; }
+        .btn-zalo { background: #0068ff; width: 100%; margin-top: 5px; }
+        .btn-save { background: #2d3436; padding: 8px 15px; }
         
-        /* TRẠNG THÁI OFF */
-        .is-off { background-color: var(--off-color) !important; }
+        /* Khu vực nhập nhanh tối ưu cho ngón tay */
+        .quick-fill { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 15px; background: #e9ecef; padding: 12px; border-radius: 8px; }
+        .quick-fill input, .quick-fill select { padding: 10px; border: 1px solid #ccc; border-radius: 5px; font-size: 14px; width: 100%; box-sizing: border-box; }
+        .btn-add { grid-column: span 2; background: #9b59b6; }
+
+        /* Bảng có thanh cuộn ngang mượt mà */
+        .table-wrapper { width: 100%; overflow-x: auto; border: 1px solid #ccc; border-radius: 5px; position: relative; }
+        table { width: 900px; border-collapse: collapse; background: white; table-layout: fixed; }
+        
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: center; vertical-align: top; }
+        thead th { background: #34495e; color: white; padding: 10px; font-size: 12px; position: sticky; top: 0; }
+        
+        .group-header { background: #f1f2f6; font-weight: bold; text-align: left; padding: 10px; font-size: 14px; border-left: 5px solid #2c3e50; }
+        .dept-col { font-weight: bold; background: #f9f9f9 !important; width: 70px; vertical-align: middle; position: sticky; left: 0; z-index: 2; }
+        
+        /* Ô lịch to hơn trên mobile */
+        .cell-box { display: flex; flex-direction: column; gap: 4px; min-height: 90px; justify-content: center; }
+        input { border: none; text-align: center; background: transparent; width: 100%; outline: none; font-size: 14px; }
+        .edit-name { font-weight: bold; }
+        .edit-time { color: var(--time); font-size: 12px; }
+        .replace-in { border: 1px dashed #fff; background: rgba(255,255,255,0.4); color: white; font-size: 11px; display: none; padding: 2px; border-radius: 3px; }
+        
+        .btn-off { font-size: 11px; background: white; border: 1px solid #ccc; cursor: pointer; padding: 6px 0; width: 100%; border-radius: 4px; font-weight: bold; margin-top: 4px; }
+        .is-off { background-color: var(--off) !important; }
         .is-off .edit-name, .is-off .edit-time { color: white !important; text-decoration: line-through; }
-        .is-off .replace-input { display: block; } 
-        .is-off .btn-off { background: white; color: red; border: none; }
+        .is-off .replace-in { display: block; }
+        
+        .btn-del { background: #ff7675; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 10px; margin-bottom: 5px; }
 
-        /* Style dành riêng cho bản in/ảnh chụp */
-        .temp-text { display: block; width: 100%; text-align: center; }
+        /* Chụp ảnh không bị mất chữ */
+        .temp-txt { display: block; width: 100%; text-align: center; font-size: 13px; line-height: 1.4; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div class="toolbar">
-        <label>Ngày T2: <input type="date" id="startDate" value="2026-03-02" onchange="updateHeaders()"></label>
-        <button class="btn btn-export" onclick="exportToImage()">📸 CHỤP FULL GỬI ZALO</button>
-        <button class="btn btn-print" onclick="window.print()">🖨️ PDF</button>
-        <button class="btn btn-save" onclick="saveData()">LƯU LẠI</button>
+        <div class="toolbar-top">
+            <input type="date" id="startDate" style="padding:8px; border-radius:5px; border:1px solid #ccc;" onchange="updateDates(); saveToDevice();">
+            <button class="btn btn-save" onclick="saveToDevice()">LƯU LẠI</button>
+        </div>
+        <button class="btn btn-zalo" onclick="exportImage()">📸 CHỤP FULL GỬI ZALO (XEM LIỀN)</button>
     </div>
 
     <div class="quick-fill">
-        <h4>⚡ Nhập nhanh:</h4>
-        <select id="targetDept"><option value="bepBody">Bếp</option><option value="pvBody">Phục Vụ</option></select>
-        <input type="text" id="qName" placeholder="Tên NV">
-        <input type="text" id="qTime" placeholder="Giờ làm">
-        <button class="btn btn-pv" style="background:#9b59b6" onclick="quickAdd()">+ Đổ vào bảng</button>
+        <select id="targetD"><option value="bepB">Bếp</option><option value="pvB">Phục Vụ</option></select>
+        <input type="text" id="qN" placeholder="Tên NV">
+        <input type="text" id="qT" placeholder="Giờ (VD: 9-18h)">
+        <button class="btn btn-add" onclick="quickAdd()">+ THÊM VÀO BẢNG</button>
     </div>
 
-    <div class="table-wrapper" id="tableWrapper">
-        <div id="captureArea" style="background: white; padding: 10px;">
+    <div class="table-wrapper">
+        <div id="captureArea" style="background:white; padding:5px;">
             <table id="mainTable">
-                <thead>
-                    <tr id="dateRow"><th>Bộ phận</th></tr>
-                    <tr id="dayRow"><td>Thứ</td><td>T2</td><td>T3</td><td>T4</td><td>T5</td><td>T6</td><td>T7</td><td>CN</td></tr>
-                </thead>
-                <tbody id="bepBody">
-                    <tr><td colspan="8" class="group-header" style="color:var(--bep-color); border-left-color:var(--bep-color)"> BẾP</td></tr>
-                </tbody>
-                <tbody id="pvBody">
-                    <tr><td colspan="8" class="group-header" style="color:var(--pv-color); border-left-color:var(--pv-color)"> PHỤC VỤ</td></tr>
-                </tbody>
+                <thead><tr id="dateRow"><th>Bộ phận</th></tr><tr style="background:#eee; font-size:12px;"><td>Thứ</td><td>T2</td><td>T3</td><td>T4</td><td>T5</td><td>T6</td><td>T7</td><td>CN</td></tr></thead>
+                <tbody id="bepB"><tr><td colspan="8" class="group-header" style="color:var(--bep)">KHỐI BẾP</td></tr></tbody>
+                <tbody id="pvB"><tr><td colspan="8" class="group-header" style="color:var(--pv)">KHỐI PHỤC VỤ</td></tr></tbody>
             </table>
         </div>
     </div>
+    <p style="font-size: 11px; color: #777; text-align: center; margin-top: 10px;">* Vuốt ngang để xem hết các thứ trong tuần</p>
 </div>
 
 <script>
-    function updateHeaders() {
-        const start = new Date(document.getElementById('startDate').value);
-        const dateRow = document.getElementById('dateRow');
-        dateRow.innerHTML = '<th>Bộ phận</th>';
-        for(let i=0; i<7; i++) {
-            let d = new Date(start);
-            d.setDate(start.getDate() + i);
-            dateRow.innerHTML += `<th>${d.getDate()}/${d.getMonth()+1}</th>`;
-        }
+    // TỰ ĐỘNG LƯU VÀ TẢI DỮ LIỆU
+    function saveToDevice() {
+        const data = { date: document.getElementById('startDate').value, bep: getD('bepB'), pv: getD('pvB') };
+        localStorage.setItem('work_data_v2', JSON.stringify(data));
     }
 
-    function addNewRow(targetId, label, nameVal, timeVal) {
-        const body = document.getElementById(targetId);
+    function getD(id) {
+        return Array.from(document.querySelectorAll(`#${id} tr:not(:first-child)`)).map(tr => ({
+            lbl: tr.querySelector('.dept-col-name').innerText,
+            days: Array.from(tr.querySelectorAll('td:not(.dept-col)')).map(td => ({
+                n: td.querySelector('.edit-name').value, t: td.querySelector('.edit-time').value,
+                r: td.querySelector('.replace-in').value, o: td.classList.contains('is-off')
+            }))
+        }));
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem('work_data_v2');
+        if(!saved) { document.getElementById('startDate').value = "2026-03-02"; updateDates(); return; }
+        const d = JSON.parse(saved); document.getElementById('startDate').value = d.date; updateDates();
+        d.bep.forEach(r => renderRow('bepB', r)); d.pv.forEach(r => renderRow('pvB', r));
+    }
+
+    function renderRow(id, rD) {
         const tr = document.createElement('tr');
-        let cells = `<td class="dept-col"><button class="btn-delete-row" onclick="deleteRow(this)">✖</button>${label}</td>`;
+        let c = `<td class="dept-col"><button class="btn-del" onclick="if(confirm('Xóa?')) {this.closest('tr').remove(); saveToDevice();}">Xóa</button><div class="dept-col-name">${rD.lbl}</div></td>`;
+        rD.days.forEach(day => {
+            c += `<td class="${day.o?'is-off':''}"><div class="cell-box">
+                <input type="text" class="edit-name" value="${day.n}" oninput="saveToDevice()">
+                <input type="text" class="edit-time" value="${day.t}" oninput="saveToDevice()">
+                <input type="text" class="replace-in" value="${day.r}" placeholder="Thay?" oninput="saveToDevice()">
+                <button class="btn-off" onclick="toggleOff(this)">${day.o?'LÀM':'OFF'}</button>
+            </div></td>`;
+        });
+        tr.innerHTML = c; document.getElementById(id).appendChild(tr);
+    }
+
+    function updateDates() {
+        const val = document.getElementById('startDate').value;
+        if(!val) return;
+        const start = new Date(val);
+        const row = document.getElementById('dateRow'); row.innerHTML = '<th>Bộ phận</th>';
         for(let i=0; i<7; i++) {
-            cells += `<td><div class="cell-box">
-                        <input type="text" class="edit-name" value="${nameVal}">
-                        <input type="text" class="edit-time" value="${timeVal}">
-                        <input type="text" class="replace-input" placeholder="Ai thay?">
-                        <button class="btn-off" onclick="toggleOff(this)">OFF</button>
-                    </div></td>`;
+            let d = new Date(start); d.setDate(start.getDate() + i);
+            row.innerHTML += `<th>${d.getDate()}/${d.getMonth()+1}</th>`;
         }
-        tr.innerHTML = cells;
-        body.appendChild(tr);
     }
 
     function quickAdd() {
-        const name = document.getElementById('qName').value;
-        const time = document.getElementById('qTime').value;
-        if(!name || !time) return alert("Nhập đủ Tên và Giờ!");
-        addNewRow(document.getElementById('targetDept').value, document.getElementById('targetDept').value === 'bepBody' ? 'Bếp' : 'Phục Vụ', name, time);
-        document.getElementById('qName').value = ""; document.getElementById('qTime').value = "";
+        const n = document.getElementById('qN').value, t = document.getElementById('qT').value, d = document.getElementById('targetD').value;
+        if(!n || !t) return alert("Nhập đủ tên và giờ!");
+        renderRow(d, { lbl: d==='bepB'?'Bếp':'Phục Vụ', days: Array(7).fill({n:n, t:t, r:'', o:false}) });
+        saveToDevice(); document.getElementById('qN').value=''; document.getElementById('qT').value='';
     }
 
     function toggleOff(btn) {
-        const cell = btn.closest('td');
-        cell.classList.toggle('is-off');
-        btn.innerText = cell.classList.contains('is-off') ? 'LÀM' : 'OFF';
+        const td = btn.closest('td'); td.classList.toggle('is-off');
+        btn.innerText = td.classList.contains('is-off') ? 'LÀM' : 'OFF';
+        saveToDevice();
     }
 
-    function deleteRow(btn) { if(confirm("Xóa dòng này?")) btn.closest('tr').remove(); }
-
-    function saveData() { alert("Đã lưu lịch!"); }
-
-    // HÀM CHỤP ẢNH FIX LỖI MẤT CHỮ
-    async function exportToImage() {
-        const wrapper = document.getElementById('tableWrapper');
+    // CHỤP ẢNH GỬI ZALO
+    async function exportImage() {
         const area = document.getElementById('captureArea');
-        const inputs = area.querySelectorAll('input[type="text"]');
-        const buttons = area.querySelectorAll('.btn-off, .btn-delete-row');
-        
-        // 1. CHUẨN BỊ: Mở rộng bảng & Ẩn nút
-        wrapper.classList.add('full-capture');
-        buttons.forEach(b => b.style.display = 'none');
-
-        // 2. MẸO QUAN TRỌNG: Chuyển Input thành Text thường để html2canvas chụp không bị lỗi
-        const tempElements = [];
-        inputs.forEach(input => {
-            if (input.offsetParent !== null) { // Chỉ xử lý input đang hiển thị
-                const span = document.createElement('span');
-                span.innerText = input.value;
-                span.className = input.className + " temp-text";
-                input.style.display = 'none';
-                input.parentNode.insertBefore(span, input);
-                tempElements.push({span, input});
-            }
+        const btns = area.querySelectorAll('button'); btns.forEach(b => b.style.display='none');
+        const ins = area.querySelectorAll('input[type="text"]');
+        const temps = [];
+        ins.forEach(i => {
+            const s = document.createElement('span'); s.innerText = i.value; s.className = i.className + " temp-txt";
+            if(i.classList.contains('replace-in') && i.value === "") s.style.display = 'none';
+            i.style.display='none'; i.parentNode.insertBefore(s, i); temps.push({s, i});
         });
 
-        // 3. CHỤP ẢNH
-        setTimeout(() => {
-            html2canvas(area, { 
-                scale: 2,
-                useCORS: true,
-                backgroundColor: "#ffffff",
-                logging: false
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = `Lich-${new Date().toLocaleDateString()}.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-                
-                // 4. KHÔI PHỤC: Hiện lại Input & Nút
-                tempElements.forEach(item => {
-                    item.span.remove();
-                    item.input.style.display = 'block';
-                });
-                wrapper.classList.remove('full-capture');
-                buttons.forEach(b => b.style.display = 'inline-block');
-                alert("Đã chụp xong!");
-            });
-        }, 300);
+        html2canvas(area, { scale: 2, backgroundColor: "#ffffff", useCORS: true }).then(canvas => {
+            const link = document.createElement('a'); link.download = 'Lich_Zalo.png';
+            link.href = canvas.toDataURL("image/png"); link.click();
+            temps.forEach(t => { t.s.remove(); t.i.style.display='block'; });
+            btns.forEach(b => b.style.display='inline-block');
+            alert("Đã tải ảnh! Bạn vào Zalo gửi cho mọi người nhé.");
+        });
     }
 
-    window.onload = () => {
-        updateHeaders();
-        addNewRow('bepBody', 'Bếp', 'Cường', '8h30-18h30');
-        addNewRow('bepBody', 'Bếp', 'Di', '17h30-4h30');
-        addNewRow('pvBody', 'Phục Vụ', 'Hiếu', '18h30-3h30');
-        addNewRow('pvBody', 'Phục Vụ', 'Ngọc', '17h30-1h30');
-        addNewRow('pvBody', 'Phục Vụ', 'Viên', '18h30-2h30');
-    };
+    window.onload = loadData;
 </script>
 </body>
 </html>
