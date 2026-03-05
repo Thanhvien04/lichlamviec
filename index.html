@@ -5,7 +5,183 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>App Lịch Làm Việc Pro</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style><!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Lịch Làm Việc Pro - Fix Chụp Ảnh</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
+        :root { --bep: #4472c4; --pv: #70ad47; --time: #d63031; --off: #ff0000; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 5px; }
+        .container { background: white; padding: 10px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .toolbar { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; background: #f8f9fa; padding: 10px; border-radius: 8px; }
+        .btn { padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; color: white; font-size: 14px; }
+        .btn-zalo { background: #0068ff; width: 100%; }
+        .btn-save { background: #2d3436; }
+        .quick-fill { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-bottom: 10px; padding: 10px; background: #eee; border-radius: 8px; }
+        .quick-fill input, .quick-fill select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        .btn-add { grid-column: span 2; background: #9b59b6; }
+
+        /* Vùng hiển thị trên điện thoại */
+        .table-outer { width: 100%; overflow-x: auto; border: 1px solid #ccc; border-radius: 4px; }
+        
+        /* Bảng cố định chiều rộng để không bị vỡ */
+        #captureArea { background: white; width: fit-content; padding: 10px; }
+        table { border-collapse: collapse; background: white; width: 900px; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 4px; text-align: center; font-size: 13px; word-wrap: break-word; }
+        
+        /* Cột cố định khi xem trên điện thoại */
+        .dept-col { position: sticky; left: 0; z-index: 10; background: #f9f9f9 !important; width: 85px; box-shadow: 2px 0 5px rgba(0,0,0,0.1); }
+        thead th { background: #34495e; color: white; }
+        .group-header { background: #f1f2f6; font-weight: bold; text-align: left; padding: 8px; border-left: 5px solid #2c3e50; }
+        
+        .cell-box { display: flex; flex-direction: column; gap: 2px; min-height: 85px; justify-content: center; }
+        input { border: none; text-align: center; background: transparent; width: 100%; font-size: 13px; outline: none; }
+        .edit-name { font-weight: bold; color: #333; }
+        .edit-time { color: var(--time); font-size: 11px; }
+        .replace-in { background: rgba(255,255,255,0.3); color: white; border: 1px dashed #fff; display: none; padding: 2px; font-size: 11px; border-radius: 3px; }
+        .btn-off { font-size: 10px; background: white; border: 1px solid #ccc; padding: 5px 0; border-radius: 4px; margin-top: 5px; }
+        .is-off { background-color: var(--off) !important; color: white; }
+        .is-off .edit-name, .is-off .edit-time { color: white !important; text-decoration: line-through; }
+        .is-off .replace-in { display: block; }
+
+        /* Khi chụp ảnh: Tạm thời gỡ bỏ sticky để html2canvas không bị lỗi mất cột */
+        .is-capturing .dept-col { position: static !important; box-shadow: none !important; }
+        .is-capturing .table-outer { overflow: visible !important; width: auto !important; }
+        .temp-txt { display: block; width: 100%; text-align: center; line-height: 1.3; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="toolbar">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+            <input type="date" id="startDate" style="padding:8px;" onchange="updateDates(); saveToDevice();">
+            <button class="btn btn-save" onclick="saveToDevice()">LƯU LẠI</button>
+        </div>
+        <button class="btn btn-zalo" onclick="exportImage()">📸 CHỤP FULL BẢNG GỬI ZALO</button>
+    </div>
+
+    <div class="quick-fill">
+        <select id="targetD"><option value="bepB">Bếp</option><option value="pvB">Phục Vụ</option></select>
+        <input type="text" id="qN" placeholder="Tên NV">
+        <input type="text" id="qT" placeholder="Giờ làm">
+        <button class="btn btn-add" onclick="quickAdd()">+ THÊM VÀO BẢNG</button>
+    </div>
+
+    <div class="table-outer" id="tableOuter">
+        <div id="captureArea">
+            <table id="mainTable">
+                <thead>
+                    <tr id="dateRow"><th class="dept-col">Bộ phận</th></tr>
+                    <tr style="background:#eee; font-size:11px;"><td class="dept-col">Thứ</td><td>T2</td><td>T3</td><td>T4</td><td>T5</td><td>T6</td><td>T7</td><td>CN</td></tr>
+                </thead>
+                <tbody id="bepB"><tr><td colspan="8" class="group-header" style="color:var(--bep)">KHỐI BẾP</td></tr></tbody>
+                <tbody id="pvB"><tr><td colspan="8" class="group-header" style="color:var(--pv)">KHỐI PHỤC VỤ</td></tr></tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    function saveToDevice() {
+        const data = { date: document.getElementById('startDate').value, bep: getD('bepB'), pv: getD('pvB') };
+        localStorage.setItem('work_data_final', JSON.stringify(data));
+    }
+    function getD(id) {
+        return Array.from(document.querySelectorAll(`#${id} tr:not(:first-child)`)).map(tr => ({
+            lbl: tr.querySelector('.dept-name').innerText,
+            days: Array.from(tr.querySelectorAll('td:not(.dept-col)')).map(td => ({
+                n: td.querySelector('.edit-name').value, t: td.querySelector('.edit-time').value,
+                r: td.querySelector('.replace-in').value, o: td.classList.contains('is-off')
+            }))
+        }));
+    }
+    function loadData() {
+        const saved = localStorage.getItem('work_data_final');
+        if(!saved) { document.getElementById('startDate').value = "2026-03-02"; updateDates(); return; }
+        const d = JSON.parse(saved); document.getElementById('startDate').value = d.date; updateDates();
+        d.bep.forEach(r => renderRow('bepB', r)); d.pv.forEach(r => renderRow('pvB', r));
+    }
+    function renderRow(id, rD) {
+        const tr = document.createElement('tr');
+        let c = `<td class="dept-col"><button style="font-size:10px; background:#ff7675; color:white; border:none; border-radius:3px; padding:2px;" onclick="if(confirm('Xóa?')){this.closest('tr').remove();saveToDevice();}">x</button><div class="dept-name">${rD.lbl}</div></td>`;
+        rD.days.forEach(day => {
+            c += `<td class="${day.o?'is-off':''}"><div class="cell-box">
+                <input type="text" class="edit-name" value="${day.n}" oninput="saveToDevice()">
+                <input type="text" class="edit-time" value="${day.t}" oninput="saveToDevice()">
+                <input type="text" class="replace-in" value="${day.r}" placeholder="Thay?" oninput="saveToDevice()">
+                <button class="btn-off" onclick="toggleOff(this)">${day.o?'LÀM':'OFF'}</button>
+            </div></td>`;
+        });
+        tr.innerHTML = c; document.getElementById(id).appendChild(tr);
+    }
+    function updateDates() {
+        const start = new Date(document.getElementById('startDate').value);
+        const row = document.getElementById('dateRow'); row.innerHTML = '<th class="dept-col">Bộ phận</th>';
+        for(let i=0; i<7; i++) {
+            let d = new Date(start); d.setDate(start.getDate() + i);
+            row.innerHTML += `<th>${d.getDate()}/${d.getMonth()+1}</th>`;
+        }
+    }
+    function quickAdd() {
+        const n = document.getElementById('qN').value, t = document.getElementById('qT').value, d = document.getElementById('targetD').value;
+        if(!n || !t) return;
+        renderRow(d, { lbl: d==='bepB'?'Bếp':'PV', days: Array(7).fill({n:n, t:t, r:'', o:false}) });
+        saveToDevice(); document.getElementById('qN').value=''; document.getElementById('qT').value='';
+    }
+    function toggleOff(btn) {
+        const td = btn.closest('td'); td.classList.toggle('is-off');
+        btn.innerText = td.classList.contains('is-off') ? 'LÀM' : 'OFF';
+        saveToDevice();
+    }
+
+    // --- HÀM CHỤP ẢNH FIX LỖI KHÔNG HẾT BẢNG ---
+    async function exportImage() {
+        const area = document.getElementById('captureArea');
+        const outer = document.getElementById('tableOuter');
+        
+        // 1. Chuẩn bị: Thêm class để bỏ sticky và gỡ giới hạn màn hình
+        document.body.classList.add('is-capturing');
+        const btns = area.querySelectorAll('button'); btns.forEach(b => b.style.display='none');
+        
+        const ins = area.querySelectorAll('input[type="text"]');
+        const temps = [];
+        ins.forEach(i => {
+            const s = document.createElement('span'); s.innerText = i.value; s.className = i.className + " temp-txt";
+            if(i.classList.contains('replace-in') && i.value==="") s.style.display='none';
+            i.style.display='none'; i.parentNode.insertBefore(s, i); temps.push({s, i});
+        });
+
+        // 2. Chụp ảnh (Dùng scale cao để nét)
+        html2canvas(area, { 
+            scale: 2, 
+            backgroundColor: "#ffffff",
+            useCORS: true,
+            width: area.scrollWidth, // Ép chụp theo toàn bộ chiều rộng thực tế của bảng
+            height: area.scrollHeight 
+        }).then(canvas => {
+            const imageData = canvas.toDataURL("image/png");
+            const newWindow = window.open();
+            newWindow.document.write(`
+                <body style="margin:0; background:#333; text-align:center;">
+                    <p style="color:white; font-family:sans-serif; padding:15px;"><b>ĐÃ CHỤP XONG!</b><br>Nhấn giữ vào ảnh dưới đây -> Lưu/Gửi Zalo</p>
+                    <img src="${imageData}" style="max-width:100%;">
+                </body>
+            `);
+
+            // 3. Khôi phục lại trạng thái cũ
+            document.body.classList.remove('is-capturing');
+            temps.forEach(t => { t.s.remove(); t.i.style.display='block'; });
+            btns.forEach(b => b.style.display='inline-block');
+        });
+    }
+    window.onload = loadData;
+</script>
+</body>
+</html>
         :root { --bep: #4472c4; --pv: #70ad47; --time: #d63031; --off: #ff0000; }
         
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f2f5; margin: 0; padding: 5px; overflow-x: hidden; }
@@ -204,3 +380,4 @@
 </script>
 </body>
 </html>
+
